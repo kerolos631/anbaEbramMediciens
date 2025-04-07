@@ -1,0 +1,328 @@
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ادارة الأداوية خدمة الأنبا إبرام</title>
+
+    <link href="src/output.css" rel="stylesheet">
+    <style>
+        body { direction: rtl; }
+        .expired { background-color: #f87171; } /* الأحمر */
+        .near-expiry { background-color: #93c5fd; } /* الأزرق */
+        .low-stock { background-color: #fef9c3; } /* الأصفر */
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        /* تحسين الاستجابة */
+        @media (max-width: 768px) {
+            .table-container {
+                max-height: none;
+            }
+            .table-container table {
+                width: 100%;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+    <nav class="flex items-center justify-between  px-20    bg-blue-300  w-full p-3 right-0 z-20 text-center text-white font-extrabold text-xl fixed top-0">
+        <div class="nav w-1/2 ">
+            <p>خدمة الأنبا إبرام للخدمات الطبية</p>
+        </div>
+        <div class="logo w-50 ">
+            <img class="mr-20 " src="WhatsApp Image 2025-04-07 at 17.01.48_66d595b5.jpg" width="50"  alt="">
+        </div>
+    </nav>
+    <div class="max-w-7xl mx-auto mt-16">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">إدارة مخزن الأدوية</h1>
+
+        <!-- Form for Adding/Editing Medicine -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" id="medName" placeholder="اسم الدواء" class="border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="number" id="medQuantity" placeholder="الكمية" min="1" class="border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="date" id="medExpiry" class="border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="addMedicine()" class="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">إضافة</button>
+            </div>
+        </div>
+
+        <!-- Search Input -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <input type="text" id="search" placeholder="ابحث باسم الدواء" onkeyup="filterMedicines()" class="border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+        </div>
+        
+        <!-- دليل الألوان -->
+        <ul class="flex gap-2 py-3">
+            <li class="w-5 h-5 bg-red-600"></li>منتهية الصلاحية
+            <li class="w-5 h-5 bg-blue-600"></li>تقترب من الانتهاء الصلاحية
+            <li class="w-5 h-5 bg-amber-300"></li>تقترب من النفاذ
+        </ul>
+        
+        <!-- جميع الأدوية Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <button onclick="toggleTable('medicineTable')" class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <span id="arrowMedicine">↓</span> جميع الأدوية
+            </button>
+            <div id="medicineTable" class="table-container hidden">
+                <table class="w-full text-right">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-3 cursor-pointer" onclick="sortTable('name')">اسم الدواء</th>
+                            <th class="p-3 cursor-pointer" onclick="sortTable('quantity')">الكمية</th>
+                            <th class="p-3 cursor-pointer" onclick="sortTable('expiry')">تاريخ الصلاحية</th>
+                            <th class="p-3 cursor-pointer" onclick="sortTable('days')">الأيام المتبقية</th>
+                            <th class="p-3">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medicineBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- الأدوية المنتهية الصلاحية Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <button onclick="toggleTable('expiredTable')" class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <span id="arrowExpired">↓</span> الأدوية المنتهية الصلاحية
+            </button>
+            <div id="expiredTable" class="table-container hidden">
+                <table class="w-full text-right">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-3">اسم الدواء</th>
+                            <th class="p-3">الكمية</th>
+                            <th class="p-3">تاريخ الصلاحية</th>
+                            <th class="p-3">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiredBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- الأدوية التي تقترب من الانتهاء من الصلاحية Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <button onclick="toggleTable('nearExpiryTable')" class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <span id="arrowNearExpiry">↓</span> الأدوية التي تقترب من الانتهاء من الصلاحية
+            </button>
+            <div id="nearExpiryTable" class="table-container hidden">
+                <table class="w-full text-right">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-3">اسم الدواء</th>
+                            <th class="p-3">الكمية</th>
+                            <th class="p-3">تاريخ الصلاحية</th>
+                            <th class="p-3">الأيام المتبقية</th>
+                            <th class="p-3">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nearExpiryBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- الأدوية التي تقترب من النفاذ Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <button onclick="toggleTable('lowStockTable')" class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <span id="arrowLowStock">↓</span> الأدوية التي تقترب من النفاذ
+            </button>
+            <div id="lowStockTable" class="table-container hidden">
+                <table class="w-full text-right">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-3">اسم الدواء</th>
+                            <th class="p-3">الكمية</th>
+                            <th class="p-3">تاريخ الصلاحية</th>
+                            <th class="p-3">الأيام المتبقية</th>
+                            <th class="p-3">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowStockBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let medicines = JSON.parse(localStorage.getItem('medicines')) || [];
+
+        function saveToLocalStorage() {
+            localStorage.setItem('medicines', JSON.stringify(medicines));
+            displayMedicines();
+        }
+
+        function addMedicine() {
+            const name = document.getElementById('medName').value.trim();
+            const quantity = parseInt(document.getElementById('medQuantity').value);
+            const expiry = document.getElementById('medExpiry').value;
+
+            if (!name || !quantity || !expiry) {
+                alert('يرجى ملء جميع الحقول');
+                return;
+            }
+
+            const existingMed = medicines.find(med => med.name === name && med.expiry === expiry);
+            if (existingMed) {
+                existingMed.quantity += quantity;
+            } else {
+                medicines.push({ name, quantity, expiry });
+            }
+
+            document.getElementById('medName').value = '';
+            document.getElementById('medQuantity').value = '';
+            document.getElementById('medExpiry').value = '';
+            saveToLocalStorage();
+        }
+
+        function toggleTable(tableId) {
+            const table = document.getElementById(tableId);
+            const arrow = document.getElementById('arrow' + tableId.charAt(0).toUpperCase() + tableId.slice(1));
+
+            if (table.classList.contains('hidden')) {
+                table.classList.remove('hidden');
+                arrow.textContent = '↑';
+            } else {
+                table.classList.add('hidden');
+                arrow.textContent = '↓';
+            }
+        }
+
+        function filterMedicines() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const filtered = medicines.filter(med => med.name.toLowerCase().includes(search));
+            displayMedicines(filtered);
+        }
+
+        function displayMedicines(filteredMeds = medicines) {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            const medicineBody = document.getElementById('medicineBody');
+            const expiredBody = document.getElementById('expiredBody');
+            const nearExpiryBody = document.getElementById('nearExpiryBody');
+            const lowStockBody = document.getElementById('lowStockBody');
+
+            medicineBody.innerHTML = '';
+            expiredBody.innerHTML = '';
+            nearExpiryBody.innerHTML = '';
+            lowStockBody.innerHTML = '';
+
+            filteredMeds.forEach((med, index) => {
+                const expiryDate = new Date(med.expiry);
+                const daysRemaining = Math.ceil((expiryDate - today) / (1000 * 3600 * 24));
+
+                // أدوية منتهية الصلاحية
+                if (expiryDate < today) {
+                    expiredBody.innerHTML += `
+                        <tr class="expired">
+                            <td class="p-3">${med.name}</td>
+                            <td class="p-3">${med.quantity}</td>
+                            <td class="p-3">${med.expiry}</td>
+                            <td class="p-3">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="editMedicine(${index})">تعديل</button>
+                                <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700" onclick="deleteMedicine(${index})">حذف</button>
+                            </td>
+                        </tr>`;
+                }
+
+                // أدوية تقترب من الانتهاء من الصلاحية (أقل من 30 يوم)
+                if (daysRemaining > 0 && daysRemaining <= 30) {
+                    nearExpiryBody.innerHTML += `
+                        <tr class="near-expiry">
+                            <td class="p-3">${med.name}</td>
+                            <td class="p-3">${med.quantity}</td>
+                            <td class="p-3">${med.expiry}</td>
+                            <td class="p-3">${daysRemaining} يوم</td>
+                            <td class="p-3">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="editMedicine(${index})">تعديل</button>
+                                <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700" onclick="deleteMedicine(${index})">حذف</button>
+                            </td>
+                        </tr>`;
+                }
+
+                // الأدوية التي تقترب من النفاذ (أقل من 5 وحدات)
+                if (med.quantity <= 5) {
+                    lowStockBody.innerHTML += `
+                        <tr class="low-stock">
+                            <td class="p-3">${med.name}</td>
+                            <td class="p-3">${med.quantity}</td>
+                            <td class="p-3">${med.expiry}</td>
+                            <td class="p-3">${daysRemaining} يوم</td>
+                            <td class="p-3">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="editMedicine(${index})">تعديل</button>
+                                <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700" onclick="deleteMedicine(${index})">حذف</button>
+                            </td>
+                        </tr>`;
+                }
+
+                // جميع الأدوية
+                let rowClass = '';
+                if (expiryDate < today) {
+                    rowClass = 'expired';
+                } else if (daysRemaining <= 30) {
+                    rowClass = 'near-expiry';
+                } else if (med.quantity <= 5) {
+                    rowClass = 'low-stock';
+                }
+
+                medicineBody.innerHTML += `
+                    <tr class="${rowClass}">
+                        <td class="p-3">${med.name}</td>
+                        <td class="p-3 flex justify-between items-center">
+                            <button class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700" onclick="updateQuantity(${index}, 1)">+</button>
+                            ${med.quantity}
+                            <button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="updateQuantity(${index}, -1)">-</button>
+                        </td>
+                        <td class="p-3">${med.expiry}</td>
+                        <td class="p-3">${daysRemaining} يوم</td>
+                        <td class="p-3">
+                            <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="editMedicine(${index})">تعديل</button>
+                            <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700" onclick="deleteMedicine(${index})">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function updateQuantity(index, delta) {
+            if (medicines[index].quantity + delta >= 0) {
+                medicines[index].quantity += delta;
+                saveToLocalStorage();
+            }
+        }
+
+        function deleteMedicine(index) {
+            medicines.splice(index, 1);
+            saveToLocalStorage();
+        }
+
+        function editMedicine(index) {
+            const med = medicines[index];
+            document.getElementById('medName').value = med.name;
+            document.getElementById('medQuantity').value = med.quantity;
+            document.getElementById('medExpiry').value = med.expiry;
+            medicines.splice(index, 1); // حذف الدواء الحالي
+            saveToLocalStorage();
+        }
+
+        function sortTable(field) {
+            if (field === 'name') {
+                medicines.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (field === 'quantity') {
+                medicines.sort((a, b) => a.quantity - b.quantity);
+            } else if (field === 'expiry') {
+                medicines.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+            } else if (field === 'days') {
+                medicines.sort((a, b) => {
+                    const daysA = Math.ceil((new Date(a.expiry) - new Date()) / (1000 * 3600 * 24));
+                    const daysB = Math.ceil((new Date(b.expiry) - new Date()) / (1000 * 3600 * 24));
+                    return daysA - daysB;
+                });
+            }
+            saveToLocalStorage();
+        }
+
+        // Load data on page load
+        displayMedicines();
+    </script>
+</body>
+</html>
